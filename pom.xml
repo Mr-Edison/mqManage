@@ -1,35 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">		
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.ppdai.infrastructure</groupId>
 	<artifactId>mq</artifactId>
 	<version>1.0.0</version>
-	<packaging>pom</packaging>	
+	<packaging>pom</packaging>
 	<name>mq</name>
     <modules>
 		<module>mq-biz</module>
 		<module>mq-rest</module>
-        <module>mq-ui</module>		
-		<module>mq-client-test-001</module>	
+        <module>mq-ui</module>
+		<module>mq-client-test-001</module>
 		<module>mq-proxy</module>
+		<module>mq-client</module>
     </modules>
 	<properties>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>1.8</java.version>
 		<maven-compiler-plugin.version>3.1</maven-compiler-plugin.version>
-		<slf4j.version>1.7.24</slf4j.version>	
+		<slf4j.version>1.7.24</slf4j.version>
 		<swagger.version>2.6.1</swagger.version>
 		<mq.client.version>5.5.1-SNAPSHOT</mq.client.version>
-	</properties>    
+	</properties>
 	<dependencyManagement>
 		<dependencies>
             <dependency>
                 <groupId>com.ppdai.infrastructure</groupId>
                 <artifactId>mq-core</artifactId>
               <version>${mq.client.version}</version>
-            </dependency>           
+            </dependency>
 			<dependency>
                 <groupId>com.ppdai.infrastructure</groupId>
                 <artifactId>mq-client-core</artifactId>
@@ -55,12 +56,12 @@
 				<artifactId>mq-ui</artifactId>
 				<version>${project.version}</version>
 			</dependency>
-			
+
 			<dependency>
 				<groupId>com.ppdai.infrastructure</groupId>
 				<artifactId>mq-rest</artifactId>
 				<version>${project.version}</version>
-			</dependency>			
+			</dependency>
 		<!-- https://mvnrepository.com/artifact/junit/junit -->
 		<dependency>
 			<groupId>junit</groupId>
@@ -125,7 +126,7 @@
                             </goals>
                         </execution>
                     </executions>
-                </plugin>	
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>
@@ -137,5 +138,5 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
-	
+
 </project>

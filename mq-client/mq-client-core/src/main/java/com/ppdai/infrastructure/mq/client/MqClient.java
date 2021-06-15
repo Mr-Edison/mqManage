@@ -1,10 +1,6 @@
 package com.ppdai.infrastructure.mq.client;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -476,9 +472,7 @@ public class MqClient {
 
 	public static boolean publish(final String topic, final String token, ProducerDataDto message)
 			throws MqNotInitException, ContentExceed65535Exception {
-
-		return publish(topic, token, Arrays.asList(message));
-
+		return publish(topic, token, Collections.singletonList(message));
 	}
 
 	public static boolean publish(final String topic, final String token, List<ProducerDataDto> messages)
@@ -489,7 +483,7 @@ public class MqClient {
 	public static boolean publish(String topic, String token, ProducerDataDto message,
 			IPartitionSelector iPartitionSelector) throws MqNotInitException, ContentExceed65535Exception {
 		// TODO Auto-generated method stub
-		return publish(topic, token, Arrays.asList(message), iPartitionSelector);
+		return publish(topic, token, Collections.singletonList(message), iPartitionSelector);
 	}
 
 	public static boolean publish(String topic, String token, List<ProducerDataDto> messages,
@@ -560,9 +554,8 @@ public class MqClient {
 			IPartitionSelector iPartitionSelector) {
 		try {
 			if (iPartitionSelector != null && !Util.isEmpty(topic)) {
-				PartitionInfo partitionInfo = iPartitionSelector.getPartitionId(topic, message,
-						MqTopicQueueRefreshService.getInstance().getTopicQueueIds(topic));
-				return partitionInfo;
+                return iPartitionSelector.getPartitionId(topic, message,
+                        MqTopicQueueRefreshService.getInstance().getTopicQueueIds(topic));
 			}
 		} catch (Exception e) {
 			log.error("getPartitionId_error", e);
@@ -570,60 +563,74 @@ public class MqClient {
 		return null;
 	}
 
+    /**
+     * 延迟初始化异步 send 消息的线程
+     *
+     * TODO 芋艿：这块合并批量发送消息的逻辑实现一般，应该结合 poll(timeout) 来实现，其中 timeout 是动态计算出来
+     */
 	private static void publishAsyn() {
+	    // asynFlag 开关，有且仅有一次
 		if (asynFlag.compareAndSet(false, true)) {
-			executor.submit(new Runnable() {
-				public void run() {
-					PublishMessageRequest preRequest = null;
-					PublishMessageRequest request = null;
-					long lastTime = System.currentTimeMillis();
-					while (true) {
-						if (!hasInit()) {
-							Util.sleep(50);
-						}
-						try {
-							request = msgsAsyn.poll();
-						} catch (Exception e) {
-
-						}
-						try {
-							if (request != null) {
-								if (preRequest != null && request.getTopicName().equals(preRequest.getTopicName())) {
-									checkBody(request.getMsgs());
-									preRequest.getMsgs().addAll(request.getMsgs());									
-									if (preRequest.getMsgs().size() > 10 || System.currentTimeMillis()
-											- lastTime > mqContext.getConfig().getPublishAsynTimeout()) {
-										publish(preRequest,
-												mqContext.getConfig().getPbRetryTimes());
-										lastTime = System.currentTimeMillis();
-										preRequest = null;
-									}
-
-								} else if (preRequest != null) {									
-									checkBody(request.getMsgs());
-									publish(preRequest,
-											mqContext.getConfig().getPbRetryTimes());
-									publish(request, mqContext.getConfig().getPbRetryTimes());
-									lastTime = System.currentTimeMillis();
-									preRequest = null;
-								} else {
-									checkBody(request.getMsgs());
-									preRequest = request;
-								}
-							} else if (preRequest != null) {
-								checkBody(preRequest.getMsgs());
-								publish(preRequest, mqContext.getConfig().getPbRetryTimes());
-								lastTime = System.currentTimeMillis();
-								preRequest = null;
-							} else {
-								Util.sleep(10);
-							}
-						} catch (Throwable e) {
-							log.error("publish_aysn_error,and request json is " + JsonUtil.toJsonNull(request), e);
-						}
-					}
-				}
-			});
+			executor.submit((Runnable) () -> {
+                PublishMessageRequest preRequest = null;
+                PublishMessageRequest request = null;
+                long lastTime = System.currentTimeMillis();
+                while (true) {
+                    if (!hasInit()) {
+                        Util.sleep(50);
+                    }
+                    try {
+                        request = msgsAsyn.poll(); // 拉取，不阻塞
+                    } catch (Exception ignored) {
+                    }
+                    try {
+                        if (request != null) {
+                            // 1.1 相同 topic，则聚集在 preRequest 中，等到一定消息数，或者一定时间，批量一起发
+                            if (preRequest != null && request.getTopicName().equals(preRequest.getTopicName())) {
+                                checkBody(request.getMsgs());
+                                // 集合消息
+                                preRequest.getMsgs().addAll(request.getMsgs());
+                                // 判断是否超过一定消息，或者一定四件
+                                if (preRequest.getMsgs().size() > 10 || System.currentTimeMillis()
+                                        - lastTime > mqContext.getConfig().getPublishAsynTimeout()) {
+                                    // 批量一起发
+                                    publish(preRequest, mqContext.getConfig().getPbRetryTimes());
+                                    // 设置时间 + 置空
+                                    lastTime = System.currentTimeMillis();
+                                    preRequest = null;
+                                }
+                            // 1.2.1 不同 topic，则将 preRequest 直接发送，因为不好聚合在一起
+                            } else if (preRequest != null) {
+                                checkBody(request.getMsgs());
+                                // 发送 preRequest 消息
+                                publish(preRequest, mqContext.getConfig().getPbRetryTimes());
+                                // 发送当前消息。TODO 芋艿：这里，其实把 request 作为新的 preRequest 更合适把
+                                publish(request, mqContext.getConfig().getPbRetryTimes());
+                                // 设置时间 + 置空
+                                lastTime = System.currentTimeMillis();
+                                preRequest = null;
+                            // 1.2.2 没有 preRequest 聚合，则自己成为聚合的开始
+                            } else {
+                                checkBody(request.getMsgs());
+                                preRequest = request;
+                            }
+                        // 2.1 没有新消息，则直接把 preRequest 聚合发送了
+                        } else if (preRequest != null) {
+                            checkBody(preRequest.getMsgs());
+                            // 发送 preRequest 消息
+                            publish(preRequest, mqContext.getConfig().getPbRetryTimes());
+                            // 设置时间 + 置空
+                            lastTime = System.currentTimeMillis();
+                            preRequest = null;
+                        // 3.1 没有消息，则 sleep 10 毫秒
+                        } else {
+                            Util.sleep(10);
+                        }
+                    } catch (Throwable e) {
+                        log.error("publish_aysn_error,and request json is " + JsonUtil.toJsonNull(request), e);
+                    }
+                }
+            });
 		}
 
 	}

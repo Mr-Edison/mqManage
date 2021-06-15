@@ -21,7 +21,7 @@ import com.ppdai.infrastructure.mq.client.resource.IMqResource;
 public class MqBrokerUrlRefreshService implements IMqBrokerUrlRefreshService {
 	private Logger log = LoggerFactory.getLogger(MqBrokerUrlRefreshService.class);
 	private ScheduledExecutorService executor = null;
-	private GetMetaGroupRequest request = new GetMetaGroupRequest(); 
+	private GetMetaGroupRequest request = new GetMetaGroupRequest();
 	private AtomicBoolean startFlag = new AtomicBoolean(false);
 	private MqContext mqContext;
 	private IMqResource mqResource;
@@ -31,13 +31,13 @@ public class MqBrokerUrlRefreshService implements IMqBrokerUrlRefreshService {
 	public MqBrokerUrlRefreshService() {
 		this(MqClient.getContext().getMqResource());
 	}
-	public MqBrokerUrlRefreshService(IMqResource mqResource) { 
+	public MqBrokerUrlRefreshService(IMqResource mqResource) {
 		this.mqContext = MqClient.getContext();
 		this.mqResource = mqResource;
 	}
 	@Override
 	public void start() {
-		if (startFlag.compareAndSet(false, true)) {			
+		if (startFlag.compareAndSet(false, true)) {
 			isStop = false;
 			runStatus = false;
 			doUpdateBrokerUrls();
@@ -62,7 +62,7 @@ public class MqBrokerUrlRefreshService implements IMqBrokerUrlRefreshService {
 			if(response==null){
 				return;
 			}
-			if (response != null && response.isSuc()) {
+			if (response.isSuc()) {
 				mqContext.setBrokerMetaMode(response.getBrokerMetaMode());
 				mqContext.setMetricUrl(response.getMetricUrl());
 				if(Util.isEmpty(mqContext.getMetricUrl())){
@@ -71,10 +71,10 @@ public class MqBrokerUrlRefreshService implements IMqBrokerUrlRefreshService {
 				}else{
 					MqClient.getMqFactory().createMqMeticReporterService().start();
 				}
-			}			
+			}
 			if (mqContext.getBrokerMetaMode() == 1 || (mqContext.getBrokerMetaMode() == 0 && mqContext.getConfig().isMetaMode())) {
 				//List<String> brokerUrls = response.getBrokerIp();
-				if (response.getBrokerIpG1()!=null) {					
+				if (response.getBrokerIpG1()!=null) {
 					mqContext.setBrokerUrls(response.getBrokerIpG1(),response.getBrokerIpG2());
 				}
 			} else if (mqContext.getBrokerMetaMode() == -1 || !mqContext.getConfig().isMetaMode()) {
@@ -87,7 +87,7 @@ public class MqBrokerUrlRefreshService implements IMqBrokerUrlRefreshService {
 	}
 
 	@Override
-	public void close() {		
+	public void close() {
 		isStop = true;
 		long start = System.currentTimeMillis();
 		// 这是为了等待有未完成的任务
@@ -101,7 +101,7 @@ public class MqBrokerUrlRefreshService implements IMqBrokerUrlRefreshService {
 		try {
 			executor.shutdown();
 		} catch (Exception e) {
-		}	
+		}
 		startFlag.set(false);
 		executor = null;
 	}

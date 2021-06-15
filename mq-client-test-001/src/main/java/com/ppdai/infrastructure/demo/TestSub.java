@@ -13,6 +13,7 @@ public class TestSub implements ISubscriber {
 	@Override
 	public List<Long> onMessageReceived(List<MessageDto> messages) {
 		try {
+		    System.out.println(messages.size());
 			MqClient.publish("test2",null, new ProducerDataDto(messages.get(0).getBody()));
 		} catch (MqNotInitException e) {
 			// TODO Auto-generated catch block

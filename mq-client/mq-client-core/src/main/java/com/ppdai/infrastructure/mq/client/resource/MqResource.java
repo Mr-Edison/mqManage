@@ -70,11 +70,11 @@ public class MqResource implements IMqResource {
 		urlsG1.set(urlsTempG1);
 		urlsG2.set(urlsTempG2);
 		if (urlsTempG1.size() > 0) {
-			int count = ((new BigDecimal(Math.random())).multiply(new BigDecimal(urlsTempG1.size()))).intValue();
+			int count = ((BigDecimal.valueOf(Math.random())).multiply(new BigDecimal(urlsTempG1.size()))).intValue();
 			counterG1.set(count);
 		}
 		if (urlsTempG2.size() > 0) {
-			int count = ((new BigDecimal(Math.random())).multiply(new BigDecimal(urlsTempG2.size()))).intValue();
+			int count = ((BigDecimal.valueOf(Math.random())).multiply(new BigDecimal(urlsTempG2.size()))).intValue();
 			counterG2.set(count);
 		}
 		failUrlG1.clear();
@@ -111,7 +111,7 @@ public class MqResource implements IMqResource {
 
 	protected String doGetHost(List<String> urLst, int count, boolean isImportant) {
 		String temp = urLst.get(count);
-		Long t = 0L;
+		Long t;
 		if (isImportant) {
 			t = failUrlG1.get(temp);
 		} else {
@@ -177,8 +177,7 @@ public class MqResource implements IMqResource {
 			return null;
 		}
 		String url = MqConstanst.METAPRE + "/getMetaGroup";
-		GetMetaGroupResponse response = post(request, url, 10, GetMetaGroupResponse.class, false);
-		return response;
+        return post(request, url, 10, GetMetaGroupResponse.class, false);
 	}
 
 	public GetTopicResponse getTopic(GetTopicRequest request) {
@@ -186,8 +185,7 @@ public class MqResource implements IMqResource {
 			return null;
 		}
 		String url = MqConstanst.METAPRE + "/getTopic";
-		GetTopicResponse response = post(request, url, 2, GetTopicResponse.class, false);
-		return response;
+        return post(request, url, 2, GetTopicResponse.class, false);
 	}
 
 	public GetGroupTopicResponse getGroupTopic(GetGroupTopicRequest request) {
@@ -195,25 +193,21 @@ public class MqResource implements IMqResource {
 			return null;
 		}
 		String url = MqConstanst.METAPRE + "/getGroupTopic";
-		GetGroupTopicResponse response = post(request, url, 2, GetGroupTopicResponse.class, false);
-		return response;
+        return post(request, url, 2, GetGroupTopicResponse.class, false);
 	}
 
 	public void addCat(CatRequest request) {
 		if (request == null) {
 			return;
 		}
-		executor1.submit(new Runnable() {
-			@Override
-			public void run() {
-				String url = MqConstanst.TOOLPRE + "/addCat";
-				try {
-					smPost(request, url, 1, CatResponse.class, false);
-				} catch (Throwable e) {
-					// TODO: handle exception
-				}
-			}
-		});
+		executor1.submit(() -> {
+            String url = MqConstanst.TOOLPRE + "/addCat";
+            try {
+                smPost(request, url, 1, CatResponse.class, false);
+            } catch (Throwable e) {
+                // TODO: handle exception
+            }
+        });
 	}
 
 	protected <T> void smPost(Object request, String path, int tryCount, Class<T> class1, boolean isImportant) {
@@ -398,7 +392,7 @@ public class MqResource implements IMqResource {
 				String url = MqConstanst.TOOLPRE + "/addLog";
 				try {
 					smPost(request, url, 1, LogResponse.class, false);
-				} catch (Throwable e) {
+				} catch (Throwable ignored) {
 
 				}
 			}
@@ -505,7 +499,7 @@ public class MqResource implements IMqResource {
 			}
 			count++;
 		}
-		if (last != null) {			
+		if (last != null) {
 			throw new RuntimeException(last);
 		}
 		return response;

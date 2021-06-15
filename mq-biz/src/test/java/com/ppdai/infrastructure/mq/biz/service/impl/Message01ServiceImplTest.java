@@ -74,21 +74,21 @@ public class Message01ServiceImplTest extends AbstractTest {
 		verify(message01Repository).insertBatchDy(anyString(), anyList());
 	}
 
-	@Test
-	public void deleteDyTest() {
-		message01ServiceImpl.deleteDy("test", 0, 1);
-		verify(message01Repository).deleteDy(anyString(), anyLong(), anyLong());
-
-		boolean rs = false;
-		doThrow(new RuntimeException("test")).when(message01Repository).deleteDy(anyString(), anyLong(), anyLong());
-		try {
-			message01ServiceImpl.deleteDy("test", 0, 1);
-		} catch (Exception e) {
-			rs = true;
-		}
-		assertEquals(true, rs);
-		verify(message01Repository).deleteDy(anyString(), anyLong(), anyLong());
-	}
+//	@Test
+//	public void deleteDyTest() {
+//		message01ServiceImpl.deleteDy("test", 0, 1);
+//		verify(message01Repository).deleteDy(anyString(), anyLong(), anyLong());
+//
+//		boolean rs = false;
+//		doThrow(new RuntimeException("test")).when(message01Repository).deleteDy(anyString(), anyLong(), anyLong());
+//		try {
+//			message01ServiceImpl.deleteDy("test", 0, 1);
+//		} catch (Exception e) {
+//			rs = true;
+//		}
+//		assertEquals(true, rs);
+//		verify(message01Repository).deleteDy(anyString(), anyLong(), anyLong());
+//	}
 
 	@Test
 	public void getListDyTest() {
@@ -110,7 +110,7 @@ public class Message01ServiceImplTest extends AbstractTest {
 	public void getListByPageTest() {
 		message01ServiceImpl.getListByPage(new HashMap<String, Object>());
 		verify(message01Repository).getListByPageSize(anyMap());
-		message01ServiceImpl.setDbId(1); 
+		message01ServiceImpl.setDbId(1);
 		boolean rs = false;
 		doThrow(new RuntimeException("test")).when(message01Repository).getListByPageSize(anyMap());
 		try {
@@ -156,13 +156,13 @@ public class Message01ServiceImplTest extends AbstractTest {
 
 	@Test
 	public void getMessageByIdsTest() {
-		message01ServiceImpl.getMessageByIds("test", Arrays.asList(1L)); 
+		message01ServiceImpl.getMessageByIds("test", Arrays.asList(1L));
 		verify(message01Repository).getMessageByIds(anyString(), anyList());
 		message01ServiceImpl.setDbId(1);
 		boolean rs = false;
 		doThrow(new RuntimeException("test")).when(message01Repository).getMessageByIds(anyString(), anyList());
 		try {
-			message01ServiceImpl.getMessageByIds("test", Arrays.asList(1L)); 
+			message01ServiceImpl.getMessageByIds("test", Arrays.asList(1L));
 		} catch (Exception e) {
 			rs = true;
 		}
@@ -197,7 +197,7 @@ public class Message01ServiceImplTest extends AbstractTest {
 		message01ServiceImpl.getDataSource();
 		message01ServiceImpl.setDbId(1L);
 		message01ServiceImpl.clearDbId();
-		message01ServiceImpl.getMaxConnectionsCount();		
+		message01ServiceImpl.getMaxConnectionsCount();
 		Map<String,String> conMap=new HashMap<String, String>();
 		conMap.put("Value", "1");
 		when(message01Repository.getMaxConnectionsCount()).thenReturn(conMap);
@@ -205,13 +205,13 @@ public class Message01ServiceImplTest extends AbstractTest {
 		message01ServiceImpl.getConnectionsCount();
 		when(message01Repository.getConnectionsCount()).thenReturn(1);
 		assertEquals(1, message01ServiceImpl.getConnectionsCount().intValue());
-		
+
 		message01ServiceImpl.setDbId(1L);
 		message01ServiceImpl.updateFailMsgResult("test",Arrays.asList(1L),1);
 		message01ServiceImpl.setDbId(1L);
 		message01ServiceImpl.deleteOldFailMsg("test",1L,1);
 		message01ServiceImpl.setDbId(1L);
-		message01ServiceImpl.deleteByIds("test",Arrays.asList(1L));		
+		message01ServiceImpl.deleteByIds("test",Arrays.asList(1L));
 	}
 
 	@Test
@@ -269,20 +269,20 @@ public class Message01ServiceImplTest extends AbstractTest {
 	public void getTableQuantityByDbNameTest() {
 		assertEquals(0, message01ServiceImpl.getTableQuantityByDbName("test"));
 		assertEquals(0, message01ServiceImpl.getTableNamesByDbName("test").size());
-		
+
 		List<TableInfoEntity> dataLst =new ArrayList<TableInfoEntity>();
 		TableInfoEntity tableInfoEntity=new TableInfoEntity();
 		tableInfoEntity.setMaxId(1L);
 		tableInfoEntity.setDbName("test");
 		tableInfoEntity.setTbName("test");
 		dataLst.add(tableInfoEntity);
-		message01ServiceImpl.setDbId(1);		
+		message01ServiceImpl.setDbId(1);
 		when(dbNodeService.getDataSource(anyLong(), anyBoolean())).thenReturn(new DruidDataSource());
 		when(message01Repository.getMaxIdByDb()).thenReturn(dataLst);
 		assertEquals(1, message01ServiceImpl.getTableNamesByDbName("test").size());
-		message01ServiceImpl.setDbId(1);		
+		message01ServiceImpl.setDbId(1);
 		assertEquals(1, message01ServiceImpl.getTableQuantityByDbName("test"));
-		
+
 	}
 
 	@Test
@@ -322,5 +322,5 @@ public class Message01ServiceImplTest extends AbstractTest {
 		assertEquals(true, rs);
 		verify(message01Repository).getNearByMessageById(anyString(), anyLong());
 	}
-	
+
 }
