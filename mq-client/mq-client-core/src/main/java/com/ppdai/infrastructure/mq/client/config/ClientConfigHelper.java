@@ -67,8 +67,7 @@ public class ClientConfigHelper {
 		}
 		Document document = loadDocument(inputStream);
 		Element rootElement = document.getDocumentElement();
-		Map<String, ConsumerGroupVo> config = getConsumerConfig(rootElement);
-		return config;
+        return getConsumerConfig(rootElement);
 	}
 
 	private Map<String, ConsumerGroupVo> getConsumerConfig(final Element element) {

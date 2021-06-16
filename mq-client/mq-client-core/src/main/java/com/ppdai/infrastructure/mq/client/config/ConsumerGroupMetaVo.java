@@ -1,8 +1,16 @@
 package com.ppdai.infrastructure.mq.client.config;
 
 public class ConsumerGroupMetaVo {
-	private String name;
-	private String originName;	
+
+    /**
+     * 消费组名
+     */
+    private String name;
+    /**
+     * 原消费组名
+     * 如果不存在，则会赋值为 name
+     */
+	private String originName;
 
 	public String getOriginName() {
 		return originName;

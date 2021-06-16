@@ -56,7 +56,9 @@ import com.ppdai.infrastructure.mq.client.factory.MqFactory;
 import com.ppdai.infrastructure.mq.client.resolver.ISubscriberResolver;
 
 public class MqClient {
+
 	private static Logger log = LoggerFactory.getLogger(MqClient.class);
+
 	private static AtomicBoolean initFlag = new AtomicBoolean(false);
 	private static AtomicBoolean registerFlag = new AtomicBoolean(false);
 	private static AtomicBoolean startFlag = new AtomicBoolean(false);
@@ -75,7 +77,7 @@ public class MqClient {
 	private static IMqFactory mqFactory = new MqFactory();
 	private static MqEnvironment mqEnvironment = null;
 	private static ISubscriberResolver subscriberResolver;
-	private static Object lockObj = new Object();
+	private static final Object lockObj = new Object();
 
 	public static MqEnvironment getMqEnvironment() {
 		return mqEnvironment;
@@ -317,14 +319,20 @@ public class MqClient {
 		mqBrokerUrlRefreshService.start();
 	}
 
+    /**
+     * 向 Broker 注册 Consumer
+     */
 	private static void register() {
 		if (registerFlag.compareAndSet(false, true)) {
+		    // 向 Broker 注册 Consumer
 			ConsumerRegisterRequest request = new ConsumerRegisterRequest();
 			try {
 				request.setName(mqContext.getConsumerName());
 				// request.setSdkVersion(mqContext.getSdkVersion());
 				request.setClientIp(mqContext.getConfig().getIp());
 				mqContext.setConsumerId(mqContext.getMqResource().register(request));
+
+				// 启动 mqHeartbeatService 服务，发起心跳
 				mqHeartbeatService = mqFactory.createMqHeartbeatService();
 				mqHeartbeatService.start();
 				// MqHeartbeatService.getInstance().start(mqContext);
@@ -354,6 +362,8 @@ public class MqClient {
 	}
 
 	private static boolean registerConsumerGroup() {
+	    // key：消费组名
+        // value：消费组信息
 		Map<String, ConsumerGroupVo> localConfig = new ClientConfigHelper(mqContext).getConfig();
 		return registerConsumerGroup(localConfig);
 	}
@@ -367,25 +377,23 @@ public class MqClient {
 			return doRegisterConsumerGroup(groups);
 		} else {
 			log.warn("系统为初始化，启动异步注册！");
-			executor.execute(new Runnable() {
-
-				public void run() {
-					while (!hasInit()) {
-						Util.sleep(2000);
-					}
-					try {
-						doRegisterConsumerGroup(groups);
-					} catch (Throwable e) {
-						log.error("doRegisterConsumerGroup_error", e);
-					}
-				}
-			});
+			executor.execute(() -> {
+                while (!hasInit()) {
+                    Util.sleep(2000);
+                }
+                try {
+                    doRegisterConsumerGroup(groups);
+                } catch (Throwable e) {
+                    log.error("doRegisterConsumerGroup_error", e);
+                }
+            });
 			return true;
 		}
 	}
 
 	private static boolean doRegisterConsumerGroup(Map<String, ConsumerGroupVo> groups) {
-		Map<String, List<String>> consumerGroupNames = new HashMap<>();
+		// 拼接 consumerGroupNames 与 groupNames
+	    Map<String, List<String>> consumerGroupNames = new HashMap<>();
 		String groupNames = "";
 		for (ConsumerGroupVo consumerGroup : groups.values()) {
 			if (!checkVaild(consumerGroup)) {
@@ -406,7 +414,11 @@ public class MqClient {
 			}
 			groupNames += consumerGroup.getMeta().getName() + ",";
 		}
+
+		// 注册消费者，并未发起具体的 topic 等的注册。仅仅是告诉 broker，我来了！
 		register();
+
+		// 注册 Consumer 的消费信息
 		ConsumerGroupRegisterRequest request = new ConsumerGroupRegisterRequest();
 		request.setConsumerGroupNames(consumerGroupNames);
 		request.setConsumerId(mqContext.getConsumerId());
@@ -418,26 +430,27 @@ public class MqClient {
 			}
 		}
 		try {
-			ConsumerGroupRegisterResponse consumerGroupRegisterResponse = mqContext.getMqResource()
-					.registerConsumerGroup(request);
+			ConsumerGroupRegisterResponse consumerGroupRegisterResponse = mqContext.getMqResource().registerConsumerGroup(request);
 			if (consumerGroupRegisterResponse.isSuc()) {
-				Map<String, String> broadcastConsumerGroupNames = consumerGroupRegisterResponse
-						.getConsumerGroupNameNew();
+				Map<String, String> broadcastConsumerGroupNames = consumerGroupRegisterResponse.getConsumerGroupNameNew();
 				for (ConsumerGroupVo consumerGroup : groups.values()) {
-					if (broadcastConsumerGroupNames != null
+					// TODO 疑惑：广播消费时，通过不同消费组，进行解决
+				    if (broadcastConsumerGroupNames != null
 							&& broadcastConsumerGroupNames.containsKey(consumerGroup.getMeta().getOriginName())) {
-						consumerGroup.getMeta()
-								.setName(broadcastConsumerGroupNames.get(consumerGroup.getMeta().getOriginName()));
+						consumerGroup.getMeta().setName(broadcastConsumerGroupNames.get(consumerGroup.getMeta().getOriginName()));
 					}
 					mqContext.getConfigConsumerGroup().put(consumerGroup.getMeta().getName(), consumerGroup);
 					mqContext.getConsumerGroupVersion().put(consumerGroup.getMeta().getName(), 0L);
 					fireConsumerGroupRegisterEvent(consumerGroup);
 				}
+				// 创建 consumerPollingService 服务，负责拉取消息
 				consumerPollingService = mqFactory.createConsumerPollingService();
 				consumerPollingService.start();
+				// TODO 待读：
 				mqCheckService = mqFactory.createMqCheckService();
 				mqCheckService.start();
-				mqCommitService=mqFactory.createCommitService();
+				// 启动 mqCommitService 服务，负责提交消费进度
+				mqCommitService = mqFactory.createCommitService();
 				mqCommitService.start();
 				// MqCheckService.getInstance().start(mqContext);
 				log.info(groupNames + "  subscribe_suc,订阅成功！ and json is " + JsonUtil.toJson(request));
@@ -520,14 +533,13 @@ public class MqClient {
 			IPartitionSelector iPartitionSelector) throws ContentExceed65535Exception {
 		MqTopicQueueRefreshService.getInstance().start();
 		if (messages != null && messages.size() > 0) {
-
 			for (ProducerDataDto t1 : messages) {
 				if (MessageUtil.checkMessageExceed65535(t1.getBody())) {
 					throw new ContentExceed65535Exception();
 				}
 				t1.setPartitionInfo(getPartitionId(topic, t1, iPartitionSelector));
 			}
-			PublishMessageRequest request = null;
+			PublishMessageRequest request;
 			try {
 				request = new PublishMessageRequest();
 				request.setClientIp(mqContext.getConfig().getIp());
@@ -683,7 +695,6 @@ public class MqClient {
 			return response.getCount();
 		}
 		throw new RuntimeException("获取消息数量异常！");
-
 	}
 
 	public static boolean publish(PublishMessageRequest request, int times) {
@@ -702,10 +713,9 @@ public class MqClient {
 				log.error("publish_fail", e1);
 				return false;
 			}
-
 		}
-
 	}
+
 	// 此close表示退出消费
 	public static void close() {
 		Transaction transaction = Tracer.newTransaction("mq-client", "close-client");

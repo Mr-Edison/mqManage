@@ -166,9 +166,7 @@ public class MqContext {
 	public void setAppSubEnvMap(Map<String, Set<String>> consumerGroupSubEnvMap) {
 		Set<String> rs = new java.util.HashSet<>(5);
 		if (consumerGroupSubEnvMap != null && consumerGroupSubEnvMap.size() > 0) {
-			consumerGroupSubEnvMap.entrySet().forEach(t1 -> {
-				rs.addAll(t1.getValue());
-			});
+			consumerGroupSubEnvMap.forEach((key, value) -> rs.addAll(value));
 		}
 		this.appSubEnv = rs;
 	}

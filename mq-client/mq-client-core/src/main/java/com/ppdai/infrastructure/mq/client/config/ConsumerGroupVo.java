@@ -6,7 +6,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.ppdai.infrastructure.mq.biz.common.util.Util;
 
 public class ConsumerGroupVo {
-	private ConsumerGroupMetaVo meta;
+
+    /**
+     * 消费组的元数据
+     */
+    private ConsumerGroupMetaVo meta;
+    /**
+     * 消费组的 topic 元数据
+     */
 	private Map<String, ConsumerGroupTopicVo> topics;
 
 	public ConsumerGroupVo() {

@@ -29,6 +29,7 @@ import com.ppdai.infrastructure.mq.client.factory.IMqFactory;
 import com.ppdai.infrastructure.mq.client.resource.IMqResource;
 
 public class ConsumerPollingService implements IConsumerPollingService {
+
 	private Logger log = LoggerFactory.getLogger(ConsumerPollingService.class);
 	private ThreadPoolExecutor executor = null;
 	private TraceMessage traceMsg = TraceFactory.getInstance("ConsumerPollingService");
@@ -56,28 +57,26 @@ public class ConsumerPollingService implements IConsumerPollingService {
 		if (startFlag.compareAndSet(false, true)) {
 			isStop = false;
 			runStatus = false;
-			executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(100),
+			executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
+                    new LinkedBlockingQueue<>(100),
 					SoaThreadFactory.create("ConsumerPollingService", true),
 					new ThreadPoolExecutor.DiscardOldestPolicy());
-			executor.execute(new Runnable() {
-				@Override
-				public void run() {
-					while (!isStop) {
-						TraceMessageItem traceMessageItem = new TraceMessageItem();
-						runStatus = true;
-						try {
-							traceMessageItem.status = "suc";
-							longPolling();
-						} catch (Throwable e) {
-							// e.printStackTrace();
-							traceMessageItem.status = "fail";
-							Util.sleep(1000);
-						}
-						traceMsg.add(traceMessageItem);
-						runStatus = false;
-					}
-				}
-			});
+			executor.execute(() -> {
+                while (!isStop) {
+                    TraceMessageItem traceMessageItem = new TraceMessageItem();
+                    runStatus = true;
+                    try {
+                        traceMessageItem.status = "suc";
+                        longPolling();
+                    } catch (Throwable e) {
+                        // e.printStackTrace();
+                        traceMessageItem.status = "fail";
+                        Util.sleep(1000);
+                    }
+                    traceMsg.add(traceMessageItem);
+                    runStatus = false;
+                }
+            });
 		}
 	}
 

@@ -5,7 +5,11 @@ import com.ppdai.infrastructure.mq.biz.event.IAsynSubscriber;
 import com.ppdai.infrastructure.mq.biz.event.ISubscriber;
 
 public class ConsumerGroupTopicVo {
-	private String name;
+
+    /**
+     * Topic 名
+     */
+    private String name;
 	@JsonIgnore
 	private transient ISubscriber subscriber;
 	@JsonIgnore
