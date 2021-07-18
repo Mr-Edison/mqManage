@@ -1,10 +1,26 @@
 package com.ppdai.infrastructure.mq.biz.dto.base;
 
 public class ConsumerQueueVersionDto {
-	private long queueOffsetId;
+
+    /**
+     * 消息进度的编号
+     */
+    private long queueOffsetId;
+    /**
+     * 消费进度版本
+     */
 	private volatile long offsetVersion;
+    /**
+     * 消费进度
+     */
 	private volatile long offset;
+    /**
+     * 消费者组
+     */
 	private String consumerGroupName;
+    /**
+     * 消息主题
+     */
 	private String topicName;
 
 	public long getQueueOffsetId() {

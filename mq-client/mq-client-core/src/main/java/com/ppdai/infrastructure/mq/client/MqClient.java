@@ -806,7 +806,7 @@ public class MqClient {
 
 	public static void commit(List<MessageDto> failMsgs, ConsumerQueueDto consumerQueue) {
 		IConsumerPollingService consumerPollingService = MqClient.getMqFactory().createConsumerPollingService();
-		Map<String, IMqGroupExcutorService> groups = consumerPollingService.getMqExcutors();
+		Map<String, IMqGroupExcutorService> groups = consumerPollingService.getMqExecutors();
 		if (groups != null) {
 			if (groups.containsKey(consumerQueue.getConsumerGroupName())) {
 				IMqGroupExcutorService iMqGroupExcutorService = groups.get(consumerQueue.getConsumerGroupName());

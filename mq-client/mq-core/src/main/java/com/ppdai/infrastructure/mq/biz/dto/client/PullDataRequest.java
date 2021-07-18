@@ -3,10 +3,26 @@ package com.ppdai.infrastructure.mq.biz.dto.client;
 import com.ppdai.infrastructure.mq.biz.dto.BaseRequest;
 
 public class PullDataRequest extends BaseRequest {
-	private long queueId;
+
+    /**
+     * 队列编号
+     */
+    private long queueId;
+    /**
+     * 开始位置 >
+     */
 	private long offsetStart;
+    /**
+     * 结束位置 <=
+     */
 	private long offsetEnd;
+    /**
+     * Topic
+     */
 	private String topicName;
+    /**
+     * 消费组
+     */
 	private String consumerGroupName;
 
 	public long getQueueId() {

@@ -36,8 +36,10 @@ import com.ppdai.infrastructure.mq.biz.service.QueueOffsetService;
 @Service
 public class ConsumerCommitServiceImpl implements ConsumerCommitService, BrokerTimerService {
 	private static final Logger log = LoggerFactory.getLogger(ConsumerCommitService.class);
+
 	protected final AtomicReference<Map<Long, ConsumerQueueVersionDto>> mapAppPolling = new AtomicReference<>(
 			new ConcurrentHashMap<>(4000));
+
 	protected final Map<Long, ConsumerQueueVersionDto> failMapAppPolling = new ConcurrentHashMap<>(100);
 	@Autowired
 	private SoaConfig soaConfig;
@@ -102,7 +104,7 @@ public class ConsumerCommitServiceImpl implements ConsumerCommitService, BrokerT
 			final int size = map.size();
 			Transaction transaction = Tracer.newTransaction("Timer-service", "commit");
 			try {
-				int countSize = map.size() < commitThreadSize ? map.size() : commitThreadSize;
+				int countSize = Math.min(map.size(), commitThreadSize);
 				if (countSize == 1) {
 					for (Map.Entry<Long, ConsumerQueueVersionDto> entry : map.entrySet()) {
 						doCommitOffset(entry.getValue(), 0, offsetVersionMap, size);
@@ -140,7 +142,7 @@ public class ConsumerCommitServiceImpl implements ConsumerCommitService, BrokerT
 				QueueOffsetEntity queueOffsetEntity = new QueueOffsetEntity();
 				queueOffsetEntity.setId(request.getQueueOffsetId());
 				queueOffsetEntity.setOffsetVersion(request.getOffsetVersion());
-				queueOffsetEntity.setOffset(request.getOffset());	
+				queueOffsetEntity.setOffset(request.getOffset());
 				queueOffsetEntity.setConsumerGroupName(request.getConsumerGroupName());
 				queueOffsetEntity.setTopicName(request.getTopicName());
 				boolean rs = false;
@@ -190,8 +192,8 @@ public class ConsumerCommitServiceImpl implements ConsumerCommitService, BrokerT
 	}
 
 	protected long lastTime = System.currentTimeMillis();
-	private Object lockObj = new Object();
-	private Object lockObj1 = new Object();
+	private final Object lockObj = new Object();
+	private final Object lockObj1 = new Object();
 
 	@Override
 	public CommitOffsetResponse commitOffset(CommitOffsetRequest request) {
@@ -203,21 +205,25 @@ public class ConsumerCommitServiceImpl implements ConsumerCommitService, BrokerT
 		try {
 			if (request != null && !CollectionUtils.isEmpty(request.getQueueOffsets())) {
 				request.getQueueOffsets().forEach(t1 -> {
+				    //
 					ConsumerQueueVersionDto temp = map.get(t1.getQueueOffsetId());
-					boolean flag1 = true;
+					boolean flag1 = true; // 是否从 map 中，获得 ConsumerQueueVersionDto 对象。
 					if (temp == null) {
 						synchronized (lockObj1) {
 							temp = map.get(t1.getQueueOffsetId());
 							if (temp == null) {
 								map.put(t1.getQueueOffsetId(), t1);
-								flag1 = false;
+								flag1 = false; // 标记未获得，而是自己创建的
 							}
 						}
 					}
 					if (flag1) {
+					    // 情况一，offsetVersion 更大
 						if (temp.getOffsetVersion() < t1.getOffsetVersion()) {
+						    // TODO 芋艿：看不懂
 							clearOldData();
 							map.put(t1.getQueueOffsetId(), t1);
+                        // 情况二，offsetVersion 相同，但是 offset 更大
 						} else if (temp.getOffsetVersion() == t1.getOffsetVersion()
 								&& temp.getOffset() < t1.getOffset()) {
 							clearOldData();

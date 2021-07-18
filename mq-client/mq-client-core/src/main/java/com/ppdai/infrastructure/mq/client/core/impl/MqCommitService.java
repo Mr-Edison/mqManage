@@ -73,7 +73,7 @@ public class MqCommitService implements IMqCommitService {
 
     private void commitData() {
         IConsumerPollingService consumerPollingService = MqClient.getMqFactory().createConsumerPollingService();
-        Map<String, IMqGroupExcutorService> groups = consumerPollingService.getMqExcutors();
+        Map<String, IMqGroupExcutorService> groups = consumerPollingService.getMqExecutors();
         CommitOffsetRequest request = new CommitOffsetRequest();
         List<ConsumerQueueVersionDto> queueVersionDtos = new ArrayList<>();
         request.setQueueOffsets(queueVersionDtos);

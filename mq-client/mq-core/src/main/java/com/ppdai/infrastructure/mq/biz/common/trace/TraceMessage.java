@@ -11,6 +11,7 @@ import com.ppdai.infrastructure.mq.biz.common.util.Util;
  * 保留追踪信息 Created by liujianjun02 on 2017/12/15.
  */
 public class TraceMessage {
+
 	// private volatile AtomicInteger counter = new AtomicInteger(0);
 	private volatile int counter = 0;
 	private volatile TraceMessageItem[] data = new TraceMessageItem[100];
@@ -28,7 +29,7 @@ public class TraceMessage {
 		if (Util.isEmpty(traceMessageItem.status)) {
 			traceMessageItem.status = "none";
 		}
-		traceMessageItem.endTime = Util.formateDate(new Date(), Util.SSS_FORMATE);		
+		traceMessageItem.endTime = Util.formateDate(new Date(), Util.SSS_FORMATE);
 		doAdd(traceMessageItem);
 	}
 

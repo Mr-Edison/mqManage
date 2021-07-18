@@ -58,8 +58,10 @@ import com.ppdai.infrastructure.mq.client.resource.IMqResource;
 
 public class MqQueueExcutorService implements IMqQueueExcutorService {
     public static final int COMMIT_TIME_DELTA = 20_000;
+
     private Logger log = LoggerFactory.getLogger(MqQueueExcutorService.class);
-    private AtomicReference<ConsumerQueueDto> consumerQueueRef = new AtomicReference<ConsumerQueueDto>();
+
+    private AtomicReference<ConsumerQueueDto> consumerQueueRef = new AtomicReference<>();
     private ThreadPoolExecutor executor = null;
     private volatile ThreadPoolExecutor executorNotify = null;
     private String consumerGroupName;
@@ -185,7 +187,6 @@ public class MqQueueExcutorService implements IMqQueueExcutorService {
                 log.info("update meta with topic:" + consumerQueue.getTopicName());
                 // 更新元数据
                 updateQueueMetaWithOutOffset(consumerQueue);
-
             } else {
                 // 此时需要进行偏移更新
                 log.info("queue offset changed,发生队列重新消费" + consumerQueue.getTopicName());
@@ -338,31 +339,20 @@ public class MqQueueExcutorService implements IMqQueueExcutorService {
         if (this.iSubscriber != null || this.iAsynSubscriber != null) {
             // 确保只启动一次
             if (isStart.compareAndSet(false, true)) {
-                executor.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            pullingData();
-                        } catch (Throwable e) {
-                        }
-                    }
-
+                executor.execute(() -> {
+                    try {
+                        pullingData();
+                    } catch (Throwable ignored) { }
                 });
-                executor.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        while (!isStop) {
-                            if (isRunning) {
-                                try {
-                                    // 注意此处不能加锁，因为有些会出现延消费，然后出现阻塞
-                                    handleData();
-                                } catch (Throwable e) {
-
-                                }
-
-                            } else {
-                                Util.sleep(50);
-                            }
+                executor.execute(() -> {
+                    while (!isStop) {
+                        if (isRunning) {
+                            try {
+                                // 注意此处不能加锁，因为有些会出现延消费，然后出现阻塞
+                                handleData();
+                            } catch (Throwable ignored) { }
+                        } else {
+                            Util.sleep(50);
                         }
                     }
                 });
@@ -444,7 +434,7 @@ public class MqQueueExcutorService implements IMqQueueExcutorService {
     private void doHandleData(ConsumerQueueDto pre, int msgSize) {
         // int threadSize =threadRemain.get();
         int threadSize = pre.getThreadSize() - taskCounter.get();
-        int startThread = (int) ((msgSize + pre.getConsumerBatchSize() - 1) / pre.getConsumerBatchSize());
+        int startThread = (msgSize + pre.getConsumerBatchSize() - 1) / pre.getConsumerBatchSize();
         if (startThread >= threadSize) {
             startThread = threadSize;
         }
@@ -469,8 +459,7 @@ public class MqQueueExcutorService implements IMqQueueExcutorService {
         }
     }
 
-    private void batchExcute(ConsumerQueueDto pre, int startThread, long batchRecorderId,
-                             CountDownLatch countDownLatch) {
+    private void batchExcute(ConsumerQueueDto pre, int startThread, long batchRecorderId, CountDownLatch countDownLatch) {
         for (int i = 0; i < startThread; i++) {
             if (executor != null) {
                 executor.execute(new MsgThread(pre, batchRecorderId, countDownLatch, timeOutCount));
@@ -710,7 +699,7 @@ public class MqQueueExcutorService implements IMqQueueExcutorService {
                             }
                     }
                 }
-                maxId = maxId < messageDto.getId() ? messageDto.getId() : maxId;
+                maxId = Math.max(maxId, messageDto.getId());
                 // flag = true;
                 pair.item1 = maxId;
                 pair.item2 = true;
@@ -764,8 +753,7 @@ public class MqQueueExcutorService implements IMqQueueExcutorService {
         }
         try {
             if (MqClient.getContext().getMqEvent().getPostHandleListener() != null) {
-                MqClient.getContext().getMqEvent().getPostHandleListener().postHandle(temp,
-                        failIds == null || failIds.isEmpty());
+                MqClient.getContext().getMqEvent().getPostHandleListener().postHandle(temp, failIds.isEmpty());
             }
         } catch (Exception e) {
             log.error("postHandle_error", e);
@@ -927,7 +915,6 @@ public class MqQueueExcutorService implements IMqQueueExcutorService {
                     Util.sleep(100);
                 }
                 updateLastId(pre, t1);
-
             }
         }
     }
@@ -986,8 +973,7 @@ public class MqQueueExcutorService implements IMqQueueExcutorService {
                 finishedItem.setBatchFinished(count == finishedItem.getThreadCount());
             }
             if (finishedItem.isBatchFinished()) {
-                BatchRecorderItem rs = getLastestItem();
-                return rs;
+                return getLastestItem();
             }
 
             return null;

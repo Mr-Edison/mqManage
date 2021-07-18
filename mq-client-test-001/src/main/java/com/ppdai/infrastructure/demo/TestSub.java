@@ -1,6 +1,8 @@
 package com.ppdai.infrastructure.demo;
 
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import com.ppdai.infrastructure.mq.biz.dto.base.MessageDto;
 import com.ppdai.infrastructure.mq.biz.dto.base.ProducerDataDto;
@@ -14,6 +16,9 @@ public class TestSub implements ISubscriber {
 	public List<Long> onMessageReceived(List<MessageDto> messages) {
 		try {
 		    System.out.println(messages.size());
+		    if (true) {
+		        return messages.stream().map(MessageDto::getId).collect(Collectors.toList());
+            }
 			MqClient.publish("test2",null, new ProducerDataDto(messages.get(0).getBody()));
 		} catch (MqNotInitException e) {
 			// TODO Auto-generated catch block

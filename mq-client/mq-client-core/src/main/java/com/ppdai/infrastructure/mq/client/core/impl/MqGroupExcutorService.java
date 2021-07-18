@@ -51,6 +51,7 @@ public class MqGroupExcutorService implements IMqGroupExcutorService {
                 "rbOrUpdate-" + consumerGroupOne.getMeta().getName());
         try {
             mqContext.getConsumerGroupMap().put(consumerGroupOne.getMeta().getName(), consumerGroupOne);
+            // 首次初始化 localConsumerGroup 对象
             if (localConsumerGroup == null) {
                 localConsumerGroup = new ConsumerGroupOneDto();
                 localConsumerGroup.setMeta(consumerGroupOne.getMeta());
@@ -61,9 +62,11 @@ public class MqGroupExcutorService implements IMqGroupExcutorService {
                 addOpLog(consumerGroupOne,
                         " receive init data,从服务端" + serverIp + "收到初始化数据," + JsonUtil.toJson(localConsumerGroup));
             }
+            // TODO 待读：rb version
             if (consumerGroupOne.getMeta().getRbVersion() > localConsumerGroup.getMeta().getRbVersion()) {
                 doRb(consumerGroupOne, serverIp);
             }
+            // TODO 待读：meta version
             if (consumerGroupOne.getMeta().getMetaVersion() > localConsumerGroup.getMeta().getMetaVersion()) {
                 log.info("meta data changed,元数据发生变更" + consumerGroupOne.getMeta().getName());
                 String preJson = JsonUtil.toJson(localConsumerGroup);

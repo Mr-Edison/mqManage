@@ -5,10 +5,12 @@ import java.util.Map;
 import com.ppdai.infrastructure.mq.biz.dto.BaseResponse;
 
 public class ConsumerGroupRegisterResponse extends BaseResponse {
-	//key为原始的名称，value为虚拟的名称
+
+    // key 为原始的名称，value 为虚拟的名称
 	private Map<String,String> broadcastConsumerGroupName;
-	//兼容broadcastConsumerGroupName,子环境会动态创建消费者组。
+	// 兼容 broadcastConsumerGroupName,子环境会动态创建消费者组。
 	private Map<String,String> consumerGroupNameNew;
+
 	public Map<String, String> getConsumerGroupNameNew() {
 		return consumerGroupNameNew;
 	}
@@ -23,5 +25,5 @@ public class ConsumerGroupRegisterResponse extends BaseResponse {
 
 	public void setBroadcastConsumerGroupName(Map<String, String> broadcastConsumerGroupName) {
 		this.broadcastConsumerGroupName = broadcastConsumerGroupName;
-	}	
+	}
 }

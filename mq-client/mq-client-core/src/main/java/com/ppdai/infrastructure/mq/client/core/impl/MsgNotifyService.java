@@ -13,7 +13,7 @@ public class MsgNotifyService implements IMsgNotifyService {
 	@Override
 	public void notify(MsgNotifyRequest request) {
 		IConsumerPollingService consumerPollingService = MqClient.getMqFactory().createConsumerPollingService();
-		Map<String, IMqGroupExcutorService> groups = consumerPollingService.getMqExcutors();
+		Map<String, IMqGroupExcutorService> groups = consumerPollingService.getMqExecutors();
 		if (groups != null && request != null && request.getMsgNotifyDtos() != null) {
 			request.getMsgNotifyDtos().forEach(msgNotifyDto -> {
 				if (groups.containsKey(msgNotifyDto.getConsumerGroupName())) {

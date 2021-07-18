@@ -59,6 +59,7 @@ public class Message01ServiceImpl implements Message01Service {
         // "." + tbName);
         try {
             setMaster(true);
+            // 批量插入数据库
             message01Repository.insertBatchDy(getDbName() + "." + tbName, entities);
             // publishCounter.inc(entities.size());
             MetricSingleton.getMetricRegistry().counter("mq.publish.count?topic=" + topic).inc(entities.size());
@@ -86,11 +87,13 @@ public class Message01ServiceImpl implements Message01Service {
     @Override
     @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRES_NEW, value = "msgTransactionManager")
     public List<Message01Entity> getListDy(String topic, String tbName, long start, long end) {
-        List<Message01Entity> rs = new ArrayList<>();
+        List<Message01Entity> rs;
         setMaster(false);
         Timer.Context context = pullTimer.time();
         try {
+            // 读取消息
             rs = message01Repository.getListDy(getDbName() + "." + tbName, start, end);
+            // 监控相关的计数
             MetricSingleton.getMetricRegistry().counter("mq.pull.count?topic=" + topic).inc(rs.size());
             MetricSingleton.getMetricRegistry().counter("mq.pull.countsum").inc(rs.size());
             long size = 0L;

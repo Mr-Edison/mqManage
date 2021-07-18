@@ -5,9 +5,9 @@
 			<topic name="test1" receiverType="com.ppdai.infrastructure.demo.TestSub"></topic>
 		</topics>
 	</consumer>
-	<consumer groupName="testBroadcastSub">
-		<topics>
-			<topic name="test1" receiverType="com.ppdai.infrastructure.demo.TestSub"></topic>
-		</topics>
-	</consumer>
+<!--	<consumer groupName="testBroadcastSub">-->
+<!--		<topics>-->
+<!--			<topic name="test1" receiverType="com.ppdai.infrastructure.demo.TestSub"></topic>-->
+<!--		</topics>-->
+<!--	</consumer>-->
 </messageQueue>

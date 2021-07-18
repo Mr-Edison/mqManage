@@ -43,15 +43,21 @@ public class ConsumerController {
 	@Autowired
 	private SoaConfig soaConfig;
 
+    /**
+     * 注册消费者
+     */
 	@PostMapping("/register")
 	public ConsumerRegisterResponse register(@RequestBody ConsumerRegisterRequest request) {
-		ConsumerRegisterResponse response = consumerService.register(request);
-		return response;
+        return consumerService.register(request);
 	}
 
+    /**
+     * 注册消费者分组
+     */
 	@PostMapping("/registerConsumerGroup")
 	public ConsumerGroupRegisterResponse consumerGroupRegister(@RequestBody ConsumerGroupRegisterRequest request) {
-		Transaction transaction= Tracer.newTransaction("ConsumerGroupRegist", "Group-"+ JsonUtil.toJsonNull(request.getConsumerGroupNames().keySet()));
+		Transaction transaction= Tracer.newTransaction("ConsumerGroupRegist",
+                "Group-"+ JsonUtil.toJsonNull(request.getConsumerGroupNames().keySet()));
 		ConsumerGroupRegisterResponse response = consumerService.registerConsumerGroup(request);
 		transaction.addData("clientIp",request.getClientIp());
 		transaction.setStatus(Transaction.SUCCESS);
@@ -61,16 +67,13 @@ public class ConsumerController {
 
 	@PostMapping("/deRegister")
 	public ConsumerDeRegisterResponse deRegister(@RequestBody ConsumerDeRegisterRequest request) {
-		ConsumerDeRegisterResponse response = consumerService.deRegister(request);
-		return response;
+        return consumerService.deRegister(request);
 	}
 
 	@PostMapping("/publish")
 	public PublishMessageResponse publish(@RequestBody PublishMessageRequest request) {
 		setSubEnv(request);
-		PublishMessageResponse response = consumerService.publish(request);
-		return response;
-
+        return consumerService.publish(request);
 	}
 
 	public boolean setSubEnvFlag() {
@@ -101,21 +104,19 @@ public class ConsumerController {
 
 	@PostMapping("/pullData")
 	public PullDataResponse pullData(@RequestBody PullDataRequest request) {
-		PullDataResponse response = consumerService.pullData(request);
-		return response;
+        return consumerService.pullData(request);
 	}
 
 	@PostMapping("/publishAndUpdateResultFailMsg")
 	public FailMsgPublishAndUpdateResultResponse publishAndUpdateResultFailMsg(
 			@RequestBody FailMsgPublishAndUpdateResultRequest request) {
-		FailMsgPublishAndUpdateResultResponse response = consumerService.publishAndUpdateResultFailMsg(request);
-		return response;
+        return consumerService.publishAndUpdateResultFailMsg(request);
 
 	}
 
 	@PostMapping("/getMessageCount")
 	public GetMessageCountResponse getMessageCount(@RequestBody GetMessageCountRequest request) {
-		GetMessageCountResponse response = consumerService.getMessageCount(request);
-		return response;
+        return consumerService.getMessageCount(request);
 	}
+
 }

@@ -6,6 +6,7 @@ import com.ppdai.infrastructure.mq.biz.dto.BaseRequest;
 
 //发送失败消息和更新重试执行结果
 public class FailMsgPublishAndUpdateResultRequest extends BaseRequest {
+
 	// 消息的id
 	private List<Long> ids;
 

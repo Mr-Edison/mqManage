@@ -74,7 +74,8 @@ import com.ppdai.infrastructure.mq.biz.ui.exceptions.CheckFailException;
 @Service
 public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupEntity>
 		implements CacheUpdateService, ConsumerGroupService, TimerService {
-	private Logger log = LoggerFactory.getLogger(ConsumerGroupServiceImpl.class);
+
+	private final Logger log = LoggerFactory.getLogger(ConsumerGroupServiceImpl.class);
 
 	@Autowired
 	private ConsumerGroupRepository consumerGroupRepository;
@@ -174,7 +175,7 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
 				lastUpdateEntity = null;
 			}
 			traceMessageItem.status = "count-" + dataMap.size();
-			consumerGroupCacheTrace.add(traceMessageItem);			
+			consumerGroupCacheTrace.add(traceMessageItem);
 			transaction.setStatus(Transaction.SUCCESS);
 		} catch (Exception e) {
 			transaction.setStatus(e);
@@ -256,7 +257,6 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
 		updateRbVersion(new ArrayList<>(idsMap.keySet()));
 		// 批量插入消息事件
 		notifyMessageService.insertBatch(notifyMessageEntities);
-
 	}
 
 	@Transactional(rollbackFor = Exception.class)
@@ -755,14 +755,22 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
 	@Transactional(rollbackFor = Exception.class, propagation= Propagation.NESTED)
 	public void copyAndNewConsumerGroup(ConsumerGroupEntity consumerGroupEntityOld,
 			ConsumerGroupEntity consumerGroupEntityNew) {
+	    // 插入一个新的 ConsumerGroupEntity 记录
 		consumerGroupEntityNew.setId(0);
 		insert(consumerGroupEntityNew);
+
+		// 获得 consumerGroup 对应的所有 consumerGroup。原因是，广播消费者组，相同 consumerGroup 会有多个
 		Map<String, ConsumerGroupEntity> consumerGroupMap = getConsumerGroupByName(consumerGroupEntityOld.getName());
+		// ConsumerGroupEntity.id => Topic 名字 => ConsumerGroupTopicEntity
 		Map<Long, Map<String, ConsumerGroupTopicEntity>> ctMap = consumerGroupTopicService.getCache();
+		// 获得原始 consumerGroup 消费的 ConsumerGroupTopicEntity 们，即消费的 topic
 		Map<String, ConsumerGroupTopicEntity> consumerTopics = ctMap.get(consumerGroupEntityOld.getId());
+
+		// 将新的 ConsumerGroup【广播】，订阅原始的 ConsumerGroup 的 Topic
 		if (consumerTopics != null) {
-			for (Map.Entry<String, ConsumerGroupTopicEntity> entry : consumerTopics.entrySet()) {
-				if (entry.getValue().getTopicType() == 1) {
+			// 每一个遍历，都是一个 topic
+		    for (Map.Entry<String, ConsumerGroupTopicEntity> entry : consumerTopics.entrySet()) {
+				if (entry.getValue().getTopicType() == 1) { // 正常队列
 					ConsumerGroupTopicCreateRequest request2 = new ConsumerGroupTopicCreateRequest();
 					request2.setAlarmEmails(entry.getValue().getAlarmEmails());
 					request2.setConsumerBatchSize(entry.getValue().getConsumerBatchSize());
@@ -780,7 +788,7 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
 					request2.setTopicName(entry.getValue().getTopicName());
 					request2.setTopicType(entry.getValue().getTopicType());
 					request2.setTimeOut(entry.getValue().getTimeOut());
-				    consumerGroupTopicService.subscribe(request2,consumerGroupMap);					
+				    consumerGroupTopicService.subscribe(request2, consumerGroupMap);
 				}
 			}
 		}
@@ -795,14 +803,20 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
 		});
 		return dataMap;
 	}
+
+    /**
+     * 获得原始消费者组，对应的消费组们
+     *
+     * @param name 消费者组
+     * @return 消费组的映射
+     */
 	private Map<String, ConsumerGroupEntity> getConsumerGroupByName(String name) {
 		Map<String,Object> condition=new HashMap<>();
 		condition.put(ConsumerGroupEntity.FdOriginName,name);
 		List<ConsumerGroupEntity> consumerGroupEntities=  getList(condition);
-		Map<String,ConsumerGroupEntity> map=new HashMap<>();
-		consumerGroupEntities.forEach(t->{
-			map.put(t.getName(),t);
-		});
+		Map<String,ConsumerGroupEntity> map = new HashMap<>();
+		consumerGroupEntities.forEach(t-> map.put(t.getName(),t));
 		return map;
 	}
+
 }

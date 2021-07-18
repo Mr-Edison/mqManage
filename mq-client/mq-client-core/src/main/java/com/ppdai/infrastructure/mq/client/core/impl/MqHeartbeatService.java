@@ -97,7 +97,7 @@ public class MqHeartbeatService implements IMqHeartbeatService {
 		try {
 			long warnTimeout = MqClient.getContext().getConfig().getWarnTimeout() * 1000;
 			IConsumerPollingService consumerPollingService = MqClient.getMqFactory().createConsumerPollingService();
-			Map<String, IMqGroupExcutorService> groups = consumerPollingService.getMqExcutors();
+			Map<String, IMqGroupExcutorService> groups = consumerPollingService.getMqExecutors();
 
 			groups.entrySet().forEach(t1 -> {
 				List<TraceMessageDto> rs = new ArrayList<>(100);

@@ -77,8 +77,8 @@ public class ConsumerGroupTopicServiceImpl extends AbstractBaseService<ConsumerG
 	private TopicService topicService;
 	@Autowired
 	private QueueOffsetService queueOffsetService;
-	
-	protected volatile boolean isRunning = true; 
+
+	protected volatile boolean isRunning = true;
 	protected AtomicReference<Map<Long, Map<String, ConsumerGroupTopicEntity>>> consumerGroupTopicRefMap = new AtomicReference<>(
 			new HashMap<>());
 
@@ -92,7 +92,7 @@ public class ConsumerGroupTopicServiceImpl extends AbstractBaseService<ConsumerG
 			new LinkedBlockingQueue<Runnable>(100), SoaThreadFactory.create("ConsumerGroupTopicService", true),
 			new ThreadPoolExecutor.DiscardOldestPolicy());
 	private TraceMessage consumerGroupTopicCacheTrace = TraceFactory.getInstance("consumerGroupTopicCache");
-	
+
 	private AtomicBoolean startFlag = new AtomicBoolean(false);
 	//private TraceMessage traceUiConsumerGroupTopic = TraceFactory.getInstance("consumerGroupTopicServiceImpl");
 
@@ -177,7 +177,7 @@ public class ConsumerGroupTopicServiceImpl extends AbstractBaseService<ConsumerG
 
 	protected volatile LastUpdateEntity lastUpdateEntity = null;
 	protected long lastTime=System.currentTimeMillis();
-	protected boolean checkChanged() {		
+	protected boolean checkChanged() {
 		boolean flag= doCheckChanged();
 		if(!flag){
 			if(System.currentTimeMillis()-lastTime>soaConfig.getMqMetaRebuildMaxInterval()){
@@ -211,7 +211,7 @@ public class ConsumerGroupTopicServiceImpl extends AbstractBaseService<ConsumerG
 			transaction.complete();
 		}
 		if(!flag && consumerGroupTopicRefMap.get().size()==0){
-			log.warn("consumerGroupTopic数据为空，请注意！");			
+			log.warn("consumerGroupTopic数据为空，请注意！");
 			return true;
 		}
 		return flag;
@@ -327,20 +327,19 @@ public class ConsumerGroupTopicServiceImpl extends AbstractBaseService<ConsumerG
 	 @Override
 	 public ConsumerGroupTopicCreateResponse subscribe(ConsumerGroupTopicCreateRequest consumerGroupTopicCreateRequest) {
 	     return subscribe(consumerGroupTopicCreateRequest, consumerGroupService.getCache());
-
      }
+
 	 @Override
 	 public ConsumerGroupTopicCreateResponse subscribe(ConsumerGroupTopicCreateRequest consumerGroupTopicCreateRequest,Map<String, ConsumerGroupEntity> consumerGroupMap) {
-	    // 如果是广播模式，并且为原始消费者组，则为镜像消费者组添加订阅
-	    ConsumerGroupEntity consumerGroupEntity = consumerGroupMap
-	                .get(consumerGroupTopicCreateRequest.getConsumerGroupName());
+	    // 如果是广播模式，并且为原始消费者组，则为镜像消费者组添加订阅 TODO 芋艿：暂时没调试到
+	    ConsumerGroupEntity consumerGroupEntity = consumerGroupMap.get(consumerGroupTopicCreateRequest.getConsumerGroupName());
 	    if (consumerGroupEntity.getMode() == 2
 	                && consumerGroupEntity.getOriginName().equals(consumerGroupEntity.getName())) {
 	           createConsumerGroupTopicByOrigin(consumerGroupTopicCreateRequest, consumerGroupMap);
 	     }
 
 	     return createConsumerGroupTopicAndFailTopic(consumerGroupTopicCreateRequest, consumerGroupMap);
-	 }	    
+	 }
 
 	/**
 	 * 镜像消费者组添加订阅
@@ -373,15 +372,14 @@ public class ConsumerGroupTopicServiceImpl extends AbstractBaseService<ConsumerG
 					createConsumerGroupTopicAndFailTopic(request,consumerGroupMap);
 				}
 			}
-
-
 		}
 	}
 
 
 	protected ConsumerGroupTopicCreateResponse createConsumerGroupTopicAndFailTopic(
             ConsumerGroupTopicCreateRequest consumerGroupTopicCreateRequest, Map<String, ConsumerGroupEntity> consumerGroupMap) {
-		CacheUpdateHelper.updateCache();
+		// TODO 芋艿：稍后去看
+	    CacheUpdateHelper.updateCache();
 		if (roleService.getRole(userInfoHolder.getUserId(), consumerGroupMap
 				.get(consumerGroupTopicCreateRequest.getConsumerGroupName()).getOwnerIds()) >= UserRoleEnum.USER
 				.getRoleCode()) {
@@ -391,30 +389,33 @@ public class ConsumerGroupTopicServiceImpl extends AbstractBaseService<ConsumerG
 		if (StringUtils.isEmpty(consumerGroupTopicCreateRequest.getTopicName())) {
 			return new ConsumerGroupTopicCreateResponse("1", "主题不能为空");
 		}
+
+		// 创建 ConsumerGroupTopicEntity 记录
 		ConsumerGroupTopicEntity consumerGroupTopicEntity = createConsumerGroupTopic(consumerGroupTopicCreateRequest);
-		ConsumerGroupEntity consumerGroupEntity = consumerGroupService
-				.get(consumerGroupTopicCreateRequest.getConsumerGroupId());
+		ConsumerGroupEntity consumerGroupEntity = consumerGroupService.get(consumerGroupTopicCreateRequest.getConsumerGroupId());
 		TopicEntity topicEntity = topicService.get(consumerGroupTopicCreateRequest.getTopicId());
-		TopicEntity failTopicEntity = topicService.createFailTopic(topicEntity, consumerGroupEntity);
-		// 创建失败topic的consumerGroupTopic
-		consumerGroupTopicCreateRequest.setTopicId(failTopicEntity.getId());
+
+		// 创建失败 topic 的 ConsumerGroupTopicEntity 记录
+        TopicEntity failTopicEntity = topicService.createFailTopic(topicEntity, consumerGroupEntity);
+        consumerGroupTopicCreateRequest.setTopicId(failTopicEntity.getId());
 		consumerGroupTopicCreateRequest.setTopicName(failTopicEntity.getName());
 		consumerGroupTopicCreateRequest.setTopicType(failTopicEntity.getTopicType());
 		consumerGroupTopicCreateRequest.setDelayProcessTime(soaConfig.getFailTopicDelayProcessTime());
 		consumerGroupTopicCreateRequest.setThreadSize(soaConfig.getFailTopicThreadSize());
-		ConsumerGroupTopicEntity failConsumerGroupTopicEntity = createConsumerGroupTopic(
-                consumerGroupTopicCreateRequest);
+		ConsumerGroupTopicEntity failConsumerGroupTopicEntity = createConsumerGroupTopic(consumerGroupTopicCreateRequest);
 
-		ConsumerGroupTopicCreateResponse consumerGroupTopicCreateResponse=new ConsumerGroupTopicCreateResponse();
-		try{
-			// 创建正常topic对应的queueOffset
+		ConsumerGroupTopicCreateResponse consumerGroupTopicCreateResponse = new ConsumerGroupTopicCreateResponse();
+		try {
+			// 创建正常 topic 对应的queueOffset
 			queueOffsetService.createQueueOffset(consumerGroupTopicEntity);
-			// 创建失败topic的queueOffset
+			// 创建失败 topic 的queueOffset
 			queueOffsetService.createQueueOffset(failConsumerGroupTopicEntity);
+
+			// TODO 芋艿：稍后看
 			consumerGroupService.addTopicNameToConsumerGroup(consumerGroupTopicEntity);
 			consumerGroupService.notifyMeta(consumerGroupTopicCreateRequest.getConsumerGroupId());
 			consumerGroupService.notifyRb(consumerGroupTopicCreateRequest.getConsumerGroupId());
-		}catch (Exception e){
+		} catch (Exception e) {
 			consumerGroupTopicCreateResponse.setMsg(e.getMessage());
 			consumerGroupTopicCreateResponse.setCode("1");
 			throw new RuntimeException(e);
@@ -424,8 +425,7 @@ public class ConsumerGroupTopicServiceImpl extends AbstractBaseService<ConsumerG
 	}
 
 	@Override
-	public ConsumerGroupTopicEntity createConsumerGroupTopic(
-			ConsumerGroupTopicCreateRequest consumerGroupTopicCreateRequest) {
+	public ConsumerGroupTopicEntity createConsumerGroupTopic(ConsumerGroupTopicCreateRequest consumerGroupTopicCreateRequest) {
 		ConsumerGroupTopicEntity consumerGroupTopicEntity = new ConsumerGroupTopicEntity();
 		consumerGroupTopicEntity.setConsumerGroupId(consumerGroupTopicCreateRequest.getConsumerGroupId());
 		consumerGroupTopicEntity.setConsumerGroupName(consumerGroupTopicCreateRequest.getConsumerGroupName());
@@ -491,7 +491,7 @@ public class ConsumerGroupTopicServiceImpl extends AbstractBaseService<ConsumerG
 		response.setCode("0");
 		try {
 			ConsumerGroupTopicEntity consumerGroupTopicEntity = consumerGroupTopicRepository
-					.getById(consumerGroupTopicId);			
+					.getById(consumerGroupTopicId);
 			if(consumerGroupTopicEntity==null){
 				return new ConsumerGroupTopicDeleteResponse();
 			}
@@ -517,7 +517,7 @@ public class ConsumerGroupTopicServiceImpl extends AbstractBaseService<ConsumerG
 			response.setMsg(e.getMessage());
 		} finally {
 			catTransactionAll.complete();
-		}		
+		}
 		return response;
 	}
 

@@ -25,15 +25,19 @@ import com.ppdai.infrastructure.mq.biz.service.common.BaseService;
  * @author dal-generator
  */
 
-public interface ConsumerService extends BaseService<ConsumerEntity> {	
+public interface ConsumerService extends BaseService<ConsumerEntity> {
 	List<ConsumerGroupConsumerEntity> getConsumerGroupByConsumerGroupIds(List<Long> consumerGroupIds);
-	List<ConsumerGroupConsumerEntity> getConsumerGroupByConsumerIds(List<Long> consumerIds);	
+	List<ConsumerGroupConsumerEntity> getConsumerGroupByConsumerIds(List<Long> consumerIds);
 	ConsumerRegisterResponse register(ConsumerRegisterRequest request);
-	ConsumerGroupRegisterResponse registerConsumerGroup(ConsumerGroupRegisterRequest request);	
+	ConsumerGroupRegisterResponse registerConsumerGroup(ConsumerGroupRegisterRequest request);
 	ConsumerDeRegisterResponse deRegister(ConsumerDeRegisterRequest deRegisterRequest);
+
 	PublishMessageResponse publish(PublishMessageRequest request);
+
 	PullDataResponse pullData(PullDataRequest request);
+
 	FailMsgPublishAndUpdateResultResponse publishAndUpdateResultFailMsg(FailMsgPublishAndUpdateResultRequest request);
+
 	GetMessageCountResponse getMessageCount(GetMessageCountRequest request);
 	int heartbeat(List<Long> ids);
 	List<ConsumerEntity> findByHeartTimeInterval(long heartTimeInterval);

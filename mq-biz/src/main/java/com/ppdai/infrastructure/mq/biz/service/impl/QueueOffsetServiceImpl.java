@@ -537,7 +537,6 @@ public class QueueOffsetServiceImpl extends AbstractBaseService<QueueOffsetEntit
 
 	@Override
 	public BaseUiResponse createQueueOffset(ConsumerGroupTopicEntity consumerGroupTopicEntity) {
-
 		List<QueueEntity> queueEntityList = queueService.getQueuesByTopicId(consumerGroupTopicEntity.getTopicId());
 		ConsumerGroupEntity consumerGroup = consumerGroupService.get(consumerGroupTopicEntity.getConsumerGroupId());
 		if (queueEntityList.size() == 0) {
@@ -565,7 +564,7 @@ public class QueueOffsetServiceImpl extends AbstractBaseService<QueueOffsetEntit
 			queueOffsetEntity.setInsertBy(userId);
 			message01Service.setDbId(queueEntity.getDbNodeId());
 			long maxId = queueService.getMaxId(queueEntity.getId(), queueEntity.getTbName());
-			// 正常topic的起始偏移为：当前的最大Id
+			// 正常topic的起始偏移为：当前的最大Id TODO 芋艿：需要看看
 			if (consumerGroupTopicEntity.getTopicType() == 1) {
 				queueOffsetEntity.setOffset(maxId - 1);
 				queueOffsetEntity.setStartOffset(maxId - 1);

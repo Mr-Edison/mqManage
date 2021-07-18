@@ -18,7 +18,7 @@ import com.ppdai.infrastructure.mq.biz.service.common.BaseService;
 @Service
 public interface ConsumerGroupTopicService extends BaseService<ConsumerGroupTopicEntity> {
 	/*
-	 * key为consumergroupid，内层key为topicname 
+	 * key为consumergroupid，内层key为topicname
 	 * */
 	Map<Long,Map<String, ConsumerGroupTopicEntity>> getCache();
 	void deleteByConsumerGroupId(long consumerGroupId);
@@ -29,7 +29,9 @@ public interface ConsumerGroupTopicService extends BaseService<ConsumerGroupTopi
 	void updateCache();
 	void updateEmailByGroupName(String groupName,String alarmEmails);
 	ConsumerGroupTopicCreateResponse subscribe(ConsumerGroupTopicCreateRequest consumerGroupTopicCreateRequest);
+
 	ConsumerGroupTopicCreateResponse subscribe(ConsumerGroupTopicCreateRequest consumerGroupTopicCreateRequest,Map<String, ConsumerGroupEntity> consumerGroupMap) ;
+
 	ConsumerGroupTopicDeleteResponse deleteConsumerGroupTopic(long consumerGroupTopicId);
 	ConsumerGroupTopicEntity createConsumerGroupTopic(
 			ConsumerGroupTopicCreateRequest consumerGroupTopicCreateRequest);
